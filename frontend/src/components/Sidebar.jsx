@@ -38,9 +38,9 @@ const navItems = [
 
 export default function Sidebar() {
   return (
-    <aside className="w-56 min-h-screen bg-sidebar flex flex-col shrink-0">
+    <aside className="w-full md:w-56 bg-sidebar flex flex-col shrink-0">
       {/* Logo */}
-      <div className="px-5 py-6 border-b border-white/10">
+      <div className="px-4 md:px-5 py-4 md:py-6 border-b border-white/10">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -55,17 +55,18 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        <p className="px-2 py-2 text-white/30 text-xs font-semibold uppercase tracking-widest">
+      <nav className="flex md:flex-col overflow-x-auto md:overflow-visible px-2 md:px-3 py-3 md:py-4 gap-1 md:space-y-0.5">
+        <p className="hidden md:block px-2 py-2 text-white/30 text-xs font-semibold uppercase tracking-widest">
           Main Menu
         </p>
+
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === "/"}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
+              `flex items-center gap-2 md:gap-3 px-3 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors duration-150 ${
                 isActive
                   ? "bg-sidebar-active text-white"
                   : "text-white/60 hover:bg-sidebar-hover hover:text-white"
@@ -79,7 +80,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-white/10">
+      <div className="hidden md:block px-5 py-4 border-t border-white/10 mt-auto">
         <p className="text-white/25 text-xs">v1.0.0 &middot; Single Admin</p>
       </div>
     </aside>

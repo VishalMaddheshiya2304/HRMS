@@ -67,7 +67,7 @@ function MarkAttendanceForm({ employees, onSuccess, onClose }) {
 
       <div>
         <label className="label">Status</label>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           {["Present", "Absent"].map((s) => (
             <button
               key={s}
@@ -87,7 +87,7 @@ function MarkAttendanceForm({ employees, onSuccess, onClose }) {
         </div>
       </div>
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <button onClick={onClose} className="btn-ghost flex-1">Cancel</button>
         <button onClick={handleSubmit} disabled={loading} className="btn-primary flex-1 justify-center">
           {loading ? "Saving…" : "Mark Attendance"}
@@ -104,7 +104,6 @@ export default function Attendance() {
   const [error, setError] = useState("");
   const [showMark, setShowMark] = useState(false);
 
-  // Filters
   const [filterEmployee, setFilterEmployee] = useState("");
   const [filterDate, setFilterDate] = useState("");
 
@@ -147,17 +146,16 @@ export default function Attendance() {
 
       {error && <div className="mb-4"><ErrorBanner message={error} onRetry={fetchData} /></div>}
 
-      {/* Summary badges */}
       {records.length > 0 && (
-        <div className="flex gap-3 mb-4">
+        <div className="flex flex-wrap gap-3 mb-4">
           <span className="badge-present">✓ {presentCount} Present</span>
           <span className="badge-absent">✗ {absentCount} Absent</span>
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <div className="flex-1 min-w-36">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-5">
+        <div className="flex-1 min-w-[180px]">
           <select
             value={filterEmployee}
             onChange={(e) => setFilterEmployee(e.target.value)}
@@ -169,7 +167,8 @@ export default function Attendance() {
             ))}
           </select>
         </div>
-        <div>
+
+        <div className="min-w-[160px]">
           <input
             type="date"
             value={filterDate}
@@ -177,6 +176,7 @@ export default function Attendance() {
             className="input"
           />
         </div>
+
         {(filterEmployee || filterDate) && (
           <button
             onClick={() => { setFilterEmployee(""); setFilterDate(""); }}
@@ -208,8 +208,8 @@ export default function Attendance() {
       )}
 
       {!loading && records.length > 0 && (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="card overflow-x-auto">
+          <table className="min-w-[720px] w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-surface">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Employee</th>

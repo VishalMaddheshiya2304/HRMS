@@ -73,7 +73,7 @@ export default function Dashboard() {
       {stats && (
         <>
           {/* Stat grid */}
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
             <StatCard
               label="Total Employees"
               value={stats.total_employees}
@@ -104,7 +104,7 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Departments */}
-            <div className="card p-5">
+            <div className="card p-4 sm:p-5">
               <h2 className="text-sm font-semibold text-gray-700 mb-4">Employees by Department</h2>
               {stats.departments.length === 0 ? (
                 <p className="text-sm text-muted text-center py-6">No departments yet</p>
@@ -134,14 +134,14 @@ export default function Dashboard() {
             </div>
 
             {/* Top attendance */}
-            <div className="card p-5">
+            <div className="card p-4 sm:p-5">
               <h2 className="text-sm font-semibold text-gray-700 mb-4">Top Attendance (Present Days)</h2>
               {stats.top_attendance.length === 0 ? (
                 <p className="text-sm text-muted text-center py-6">No attendance records yet</p>
               ) : (
                 <div className="space-y-2">
                   {stats.top_attendance.map((emp, i) => (
-                    <div key={emp.name} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                    <div key={emp.name} className="flex items-center gap-3 py-2 border-b border-border last:border-0 flex-wrap sm:flex-nowrap">
                       <span className="w-6 h-6 rounded-full bg-surface flex items-center justify-center text-xs font-bold text-muted shrink-0">
                         {i + 1}
                       </span>
@@ -155,7 +155,7 @@ export default function Dashboard() {
           </div>
 
           {/* Quick links */}
-          <div className="mt-6 grid grid-cols-2 gap-4">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link
               to="/employees"
               className="card p-4 flex items-center gap-3 hover:border-accent transition-colors group"
@@ -168,6 +168,7 @@ export default function Dashboard() {
                 <p className="text-xs text-muted">Add, view or remove staff</p>
               </div>
             </Link>
+
             <Link
               to="/attendance"
               className="card p-4 flex items-center gap-3 hover:border-accent transition-colors group"

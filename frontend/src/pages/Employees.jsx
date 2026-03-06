@@ -76,7 +76,7 @@ function AddEmployeeForm({ onSuccess, onClose }) {
         <FormError message={errors.department} />
       </div>
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <button onClick={onClose} className="btn-ghost flex-1">Cancel</button>
         <button onClick={handleSubmit} disabled={loading} className="btn-primary flex-1 justify-center">
           {loading ? "Adding…" : "Add Employee"}
@@ -94,7 +94,7 @@ function ConfirmDelete({ employee, onConfirm, onClose, loading }) {
         <span className="font-semibold text-gray-900">{employee.full_name}</span>?
         This will also remove all their attendance records.
       </p>
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <button onClick={onClose} className="btn-ghost flex-1">Cancel</button>
         <button
           onClick={onConfirm}
@@ -171,7 +171,7 @@ export default function Employees() {
 
       {/* Search */}
       {employees.length > 0 && (
-        <div className="relative mb-4 max-w-sm">
+        <div className="relative mb-4 w-full sm:max-w-sm">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -200,8 +200,8 @@ export default function Employees() {
       )}
 
       {!loading && employees.length > 0 && (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="card overflow-x-auto">
+          <table className="min-w-[720px] w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-surface">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Employee ID</th>
