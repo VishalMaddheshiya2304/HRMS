@@ -1,128 +1,267 @@
 import { useEffect, useState } from "react";
-import { getEmployees, markAttendance } from "../api/client";
+import { getEmployees, getAttendance, markAttendance } from "../api/client";
+import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
-import { LoadingSpinner, ErrorBanner } from "../components/States";
+import { LoadingSpinner, EmptyState, ErrorBanner, FormError } from "../components/States";
 
-export default function Attendance() {
-  const [employees, setEmployees] = useState([]);
-  const [attendance, setAttendance] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
+function MarkAttendanceForm({ employees, onSuccess, onClose }) {
   const today = new Date().toISOString().split("T")[0];
+  const [form, setForm] = useState({ employee_id: "", date: today, status: "Present" });
+  const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const fetchEmployees = async () => {
+  const validate = () => {
+    const e = {};
+    if (!form.employee_id) e.employee_id = "Select an employee";
+    if (!form.date) e.date = "Date is required";
+    return e;
+  };
+
+  const handleSubmit = async () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
     setLoading(true);
-    setError("");
+    setApiError("");
     try {
-      const data = await getEmployees();
-      setEmployees(data);
-    } catch {
-      setError("Could not load employees.");
+      await markAttendance(form);
+      onSuccess();
+    } catch (err) {
+      setApiError(err.response?.data?.detail || "Failed to mark attendance.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
+  return (
+    <div className="space-y-4">
+      {apiError && <ErrorBanner message={apiError} />}
 
-  const setStatus = (employeeId, status) => {
-    setAttendance((prev) => ({
-      ...prev,
-      [employeeId]: status,
-    }));
-  };
+      <div>
+        <label className="label">Employee</label>
+        <select
+          value={form.employee_id}
+          onChange={(e) => { setForm((p) => ({ ...p, employee_id: e.target.value })); setErrors((p) => ({ ...p, employee_id: "" })); }}
+          className={`input ${errors.employee_id ? "border-red-400 ring-1 ring-red-400" : ""}`}
+        >
+          <option value="">Select employee…</option>
+          {employees.map((emp) => (
+            <option key={emp.id} value={emp.id}>
+              {emp.full_name} ({emp.id})
+            </option>
+          ))}
+        </select>
+        <FormError message={errors.employee_id} />
+      </div>
 
-  const saveAttendance = async () => {
+      <div>
+        <label className="label">Date</label>
+        <input
+          type="date"
+          value={form.date}
+          onChange={(e) => { setForm((p) => ({ ...p, date: e.target.value })); setErrors((p) => ({ ...p, date: "" })); }}
+          className={`input ${errors.date ? "border-red-400 ring-1 ring-red-400" : ""}`}
+        />
+        <FormError message={errors.date} />
+      </div>
+
+      <div>
+        <label className="label">Status</label>
+        <div className="flex flex-col sm:flex-row gap-3">
+          {["Present", "Absent"].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setForm((p) => ({ ...p, status: s }))}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border-2 transition-colors ${
+                form.status === s
+                  ? s === "Present"
+                    ? "border-present bg-green-50 text-present"
+                    : "border-absent bg-red-50 text-absent"
+                  : "border-border bg-white text-muted hover:bg-surface"
+              }`}
+            >
+              {s === "Present" ? "✓ Present" : "✗ Absent"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <button onClick={onClose} className="btn-ghost flex-1">Cancel</button>
+        <button onClick={handleSubmit} disabled={loading} className="btn-primary flex-1 justify-center">
+          {loading ? "Saving…" : "Mark Attendance"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function Attendance() {
+  const [records, setRecords] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showMark, setShowMark] = useState(false);
+
+  const [filterEmployee, setFilterEmployee] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError("");
     try {
-      const requests = Object.entries(attendance).map(([employee_id, status]) =>
-        markAttendance({
-          employee_id,
-          status,
-          date: today,
-        })
-      );
-
-      await Promise.all(requests);
-
-      alert("Attendance saved successfully!");
-      setAttendance({});
+      const params = {};
+      if (filterEmployee) params.employee_id = filterEmployee;
+      if (filterDate) params.date = filterDate;
+      const [recs, emps] = await Promise.all([getAttendance(params), getEmployees()]);
+      setRecords(recs);
+      setEmployees(emps);
     } catch {
-      alert("Failed to save attendance.");
+      setError("Could not load attendance records.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => { fetchData(); }, [filterEmployee, filterDate]);
+
+  const presentCount = records.filter((r) => r.status === "Present").length;
+  const absentCount = records.filter((r) => r.status === "Absent").length;
 
   return (
     <div className="fade-in">
       <PageHeader
         title="Attendance"
-        subtitle={`Mark attendance for ${today}`}
+        subtitle={`${records.length} record${records.length !== 1 ? "s" : ""} found`}
+        action={
+          <button onClick={() => setShowMark(true)} className="btn-primary">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Mark Attendance
+          </button>
+        }
       />
 
-      {error && <ErrorBanner message={error} onRetry={fetchEmployees} />}
+      {error && <div className="mb-4"><ErrorBanner message={error} onRetry={fetchData} /></div>}
 
-      {loading && <LoadingSpinner message="Loading employees…" />}
+      {records.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-4">
+          <span className="badge-present">✓ {presentCount} Present</span>
+          <span className="badge-absent">✗ {absentCount} Absent</span>
+        </div>
+      )}
 
-      {!loading && (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-5">
+        <div className="flex-1 min-w-[180px]">
+          <select
+            value={filterEmployee}
+            onChange={(e) => setFilterEmployee(e.target.value)}
+            className="input"
+          >
+            <option value="">All Employees</option>
+            {employees.map((emp) => (
+              <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="min-w-[160px]">
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="input"
+          />
+        </div>
+
+        {(filterEmployee || filterDate) && (
+          <button
+            onClick={() => { setFilterEmployee(""); setFilterDate(""); }}
+            className="btn-ghost text-xs"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {loading && <LoadingSpinner message="Loading attendance records…" />}
+
+      {!loading && records.length === 0 && !error && (
+        <EmptyState
+          title="No records found"
+          description={
+            filterEmployee || filterDate
+              ? "Try adjusting your filters."
+              : "Start by marking attendance for your employees."
+          }
+          action={
+            !filterEmployee && !filterDate ? (
+              <button onClick={() => setShowMark(true)} className="btn-primary">
+                Mark First Attendance
+              </button>
+            ) : null
+          }
+        />
+      )}
+
+      {!loading && records.length > 0 && (
+        <div className="card overflow-x-auto">
+          <table className="min-w-[720px] w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-surface">
-                <th className="text-left px-4 py-3">Employee</th>
-                <th className="text-left px-4 py-3">Present</th>
-                <th className="text-left px-4 py-3">Absent</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Employee</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Employee ID</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Date</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">Logged At</th>
               </tr>
             </thead>
-
             <tbody className="divide-y divide-border">
-              {employees.map((emp) => (
-                <tr key={emp.id}>
-                  <td className="px-4 py-3 font-medium">
-                    {emp.full_name}
-                    <span className="text-xs text-muted ml-2">({emp.id})</span>
+              {records.map((rec) => (
+                <tr key={rec.id} className="hover:bg-surface/60 transition-colors">
+                  <td className="px-4 py-3 font-medium text-gray-900">{rec.employee_name}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted">{rec.employee_id}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {new Date(rec.date + "T00:00:00").toLocaleDateString("en-US", {
+                      weekday: "short", year: "numeric", month: "short", day: "numeric",
+                    })}
                   </td>
-
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => setStatus(emp.id, "Present")}
-                      className={`px-3 py-1 rounded-lg text-sm ${
-                        attendance[emp.id] === "Present"
-                          ? "bg-green-500 text-white"
-                          : "bg-green-50 text-green-700"
-                      }`}
-                    >
-                      ✓ Present
-                    </button>
+                    {rec.status === "Present" ? (
+                      <span className="badge-present">
+                        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
+                        Present
+                      </span>
+                    ) : (
+                      <span className="badge-absent">
+                        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" /></svg>
+                        Absent
+                      </span>
+                    )}
                   </td>
-
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => setStatus(emp.id, "Absent")}
-                      className={`px-3 py-1 rounded-lg text-sm ${
-                        attendance[emp.id] === "Absent"
-                          ? "bg-red-500 text-white"
-                          : "bg-red-50 text-red-700"
-                      }`}
-                    >
-                      ✗ Absent
-                    </button>
+                  <td className="px-4 py-3 text-xs text-muted">
+                    {new Date(rec.created_at).toLocaleString("en-US", {
+                      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                    })}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-
-          <div className="p-4 border-t flex justify-end">
-            <button
-              onClick={saveAttendance}
-              className="btn-primary"
-            >
-              Save Attendance
-            </button>
-          </div>
         </div>
+      )}
+
+      {showMark && (
+        <Modal title="Mark Attendance" onClose={() => setShowMark(false)}>
+          <MarkAttendanceForm
+            employees={employees}
+            onClose={() => setShowMark(false)}
+            onSuccess={() => { setShowMark(false); fetchData(); }}
+          />
+        </Modal>
       )}
     </div>
   );
